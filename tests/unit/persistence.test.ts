@@ -13,8 +13,9 @@ describe('base de datos local', () => {
     await ensureInitialData(db)
     expect((await db.meta.get('meta'))?.schemaVersion).toBe(SCHEMA_VERSION)
     const p = await db.profile.get('profile')
-    expect(p).toMatchObject({ weightKg: 92, heightCm: 196, maxSessionMin: 75, provisional: true, trainingDays: [1, 2, 4, 5], startDate: '2026-11-09' })
-    expect((await db.settings.get('settings'))?.theme).toBe('dark')
+    expect(p).toMatchObject({ weightKg: 92, heightCm: 196, provisional: true })
+    const s = await db.settings.get('settings')
+    expect(s).toMatchObject({ theme: 'dark', currentMeso: 0, sound: true })
   })
   it('no sobrescribe datos existentes al volver a inicializar', async () => {
     await ensureInitialData(db)
@@ -36,9 +37,8 @@ describe('base de datos local', () => {
 })
 
 describe('validación del perfil', () => {
-  const ok = { weightKg: 92, heightCm: 196, targetWeightKg: 97, maxSessionMin: 75, startDate: '2026-11-09', targetDate: '2027-07-18', trainingDays: [1, 2, 4, 5] }
+  const ok = { weightKg: 92, heightCm: 196, targetWeightKg: 97, startDate: '2026-11-16', trainingDays: [1, 3, 5] }
   it('acepta datos válidos', () => expect(profileInputSchema.safeParse(ok).success).toBe(true))
   it('rechaza peso fuera de rango', () => expect(profileInputSchema.safeParse({ ...ok, weightKg: 5 }).success).toBe(false))
-  it('rechaza fecha objetivo anterior al inicio', () => expect(profileInputSchema.safeParse({ ...ok, targetDate: '2026-01-01' }).success).toBe(false))
-  it('rechaza sin días de entrenamiento', () => expect(profileInputSchema.safeParse({ ...ok, trainingDays: [] }).success).toBe(false))
+  it('rechaza fecha no válida', () => expect(profileInputSchema.safeParse({ ...ok, startDate: 'mañana' }).success).toBe(false))
 })

@@ -1,108 +1,64 @@
-import { useState, useRef } from 'react';
-import { db } from '../../persistence/db';
+import { useRef, useState } from 'react'
+import { db } from '../../persistence/db'
+import { updateSettings } from '../../persistence/bootstrap'
+
+const FORMAT = 'hypertrophy-backup'
 
 export function BackupManager() {
-  const [mensaje, setMensaje] = useState('');
-  const inputArchivoRef = useRef<HTMLInputElement>(null);
+  const [msg, setMsg] = useState('')
+  const input = useRef<HTMLInputElement>(null)
+  const show = (t: string) => { setMsg(t); setTimeout(() => setMsg(''), 5000) }
 
-  // Función para DESCARGAR
-  const exportarDatos = async () => {
+  async function exportData() {
     try {
-      const perfil = await db.profile.toArray();
-      const ejercicios = await db.exercises.toArray();
-      const sesiones = await db.sessions.toArray();
-      const series = await db.setLogs.toArray();
-      const medidas = await db.measurements.toArray();
-
-      const backup = { fechaExportacion: new Date().toISOString(), perfil, ejercicios, sesiones, series, medidas };
-      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Hypertrophy_Backup_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      mostrarMensaje('✓ Copia descargada con éxito');
-    } catch (error) {
-      mostrarMensaje('❌ Error al exportar los datos');
-    }
-  };
-
-  // Función para RESTAURAR
-  const importarDatos = async (evento: React.ChangeEvent<HTMLInputElement>) => {
-    const archivo = evento.target.files?.[0];
-    if (!archivo) return;
-
-    const lector = new FileReader();
-    lector.onload = async (e) => {
-      try {
-        const datos = JSON.parse(e.target?.result as string);
-        
-        // Escribimos todo en la base de datos de golpe
-        await db.transaction('rw', db.profile, db.exercises, db.sessions, db.setLogs, db.measurements, async () => {
-          if (datos.perfil?.length) await db.profile.bulkPut(datos.perfil);
-          if (datos.ejercicios?.length) await db.exercises.bulkPut(datos.ejercicios);
-          if (datos.sesiones?.length) await db.sessions.bulkPut(datos.sesiones);
-          if (datos.series?.length) await db.setLogs.bulkPut(datos.series);
-          if (datos.medidas?.length) await db.measurements.bulkPut(datos.medidas);
-        });
-
-        mostrarMensaje('✓ Datos restaurados. Actualizando la app...');
-        // Recargamos la página para que la app lea los datos nuevos
-        setTimeout(() => window.location.reload(), 2000); 
-      } catch (error) {
-        mostrarMensaje('❌ Archivo no válido o error al restaurar');
+      const data = {
+        format: FORMAT, version: 2, exportedAt: new Date().toISOString(),
+        profile: await db.profile.toArray(), settings: await db.settings.toArray(), sessions: await db.sessions.toArray(),
+        rmTests: await db.rmTests.toArray(), measurements: await db.measurements.toArray(), menu: await db.menu.toArray()
       }
-    };
-    lector.readAsText(archivo);
-  };
+      const name = `Hypertrophy_copia_${new Date().toISOString().slice(0, 10)}.json`
+      const file = new File([JSON.stringify(data, null, 2)], name, { type: 'application/json' })
+      // En iPhone, compartir permite "Guardar en Archivos", enviarlo por WhatsApp, mail…
+      if (navigator.canShare?.({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: 'Copia de Hypertrophy' }) }
+        catch (e: any) { if (e?.name === 'AbortError') return; throw e }
+      } else {
+        const url = URL.createObjectURL(file)
+        const a = document.createElement('a'); a.href = url; a.download = name
+        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url)
+      }
+      await updateSettings(db, { lastBackupAt: new Date().toISOString() })
+      show('✓ Copia creada. Guárdala en Archivos o en la nube.')
+    } catch { show('❌ No se pudo crear la copia.') }
+  }
 
-  const mostrarMensaje = (texto: string) => {
-    setMensaje(texto);
-    setTimeout(() => setMensaje(''), 4000);
-  };
+  async function importData(ev: React.ChangeEvent<HTMLInputElement>) {
+    const file = ev.target.files?.[0]
+    ev.target.value = ''
+    if (!file) return
+    try {
+      const data = JSON.parse(await file.text())
+      if (data.format !== FORMAT) { show('❌ Este archivo no es una copia de esta app.'); return }
+      if (!confirm('Se reemplazarán TODOS los datos actuales por los de la copia. ¿Continuar?')) return
+      await db.transaction('rw', [db.profile, db.settings, db.sessions, db.rmTests, db.measurements, db.menu], async () => {
+        for (const t of [db.profile, db.settings, db.sessions, db.rmTests, db.measurements, db.menu]) await t.clear()
+        if (data.profile?.length) await db.profile.bulkPut(data.profile)
+        if (data.settings?.length) await db.settings.bulkPut(data.settings)
+        if (data.sessions?.length) await db.sessions.bulkPut(data.sessions)
+        if (data.rmTests?.length) await db.rmTests.bulkPut(data.rmTests)
+        if (data.measurements?.length) await db.measurements.bulkPut(data.measurements)
+        if (data.menu?.length) await db.menu.bulkPut(data.menu)
+      })
+      show('✓ Datos restaurados.')
+    } catch { show('❌ Archivo no válido o error al restaurar.') }
+  }
 
   return (
-    <div style={{ backgroundColor: '#1e1e1e', padding: '20px', borderRadius: '12px', color: 'white', marginTop: '20px' }}>
-      <h3 style={{ marginTop: 0, marginBottom: '10px', color: '#007bff' }}>Copias de Seguridad</h3>
-      <p style={{ fontSize: '14px', color: '#aaa', marginBottom: '20px' }}>
-        Tus datos se guardan en este dispositivo. Descarga una copia periódicamente para no perder tu progreso.
-      </p>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <button 
-          onClick={exportarDatos}
-          style={{ width: '100%', padding: '12px', backgroundColor: '#333', color: 'white', border: '1px solid #555', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px' }}
-        >
-          📥 Descargar Copia (JSON)
-        </button>
-
-        {/* Botón oculto para subir archivo */}
-        <input 
-          type="file" 
-          accept=".json" 
-          ref={inputArchivoRef} 
-          style={{ display: 'none' }} 
-          onChange={importarDatos}
-        />
-        
-        <button 
-          onClick={() => inputArchivoRef.current?.click()}
-          style={{ width: '100%', padding: '12px', backgroundColor: 'transparent', color: '#007bff', border: '2px dashed #007bff', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px' }}
-        >
-          📤 Restaurar Copia
-        </button>
-      </div>
-
-      {mensaje && (
-        <div style={{ marginTop: '15px', textAlign: 'center', color: mensaje.includes('✓') ? '#4caf50' : '#ff4d4d', fontWeight: 'bold' }}>
-          {mensaje}
-        </div>
-      )}
+    <div>
+      <button className="btn primary" onClick={exportData}>Crear copia de seguridad</button>
+      <input type="file" accept=".json,application/json" ref={input} style={{ display: 'none' }} onChange={importData} />
+      <button className="btn" onClick={() => input.current?.click()}>Restaurar una copia</button>
+      {msg && <p className={`small mt ${msg.startsWith('✓') ? 'ok' : 'danger'}`} role="status">{msg}</p>}
     </div>
-  );
+  )
 }

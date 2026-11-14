@@ -9,13 +9,16 @@ export interface Profile extends Stamped {
   level: 'principiante' | 'intermedio' | 'avanzado'
   goal: string
   targetWeightKg: number
+  /** día en que empieza el macrociclo */
   startDate: ISODate
-  targetDate: ISODate
+  targetDate?: ISODate
   maxSessionMin: number
   trainingDays: number[] // 0=domingo ... 6=sábado
   /** true mientras el usuario no haya confirmado los valores iniciales */
   provisional: boolean
 }
+
+export interface NutritionTargets { kcal: number; protein: number; carbs: number; fat: number }
 
 export interface AppSettings {
   id: 'settings'
@@ -25,42 +28,78 @@ export interface AppSettings {
   backupReminderDays: number
   lastBackupAt: ISODateTime | null
   profileConfirmed: boolean
+  /** mesociclo en el que el usuario dice estar (lo cambia él, nunca la app) */
+  currentMeso?: number
+  /** sustituciones guardadas: "idDía:posición" → id de ejercicio */
+  swaps?: Record<string, string>
+  sound?: boolean
+  keepAwake?: boolean
+  nutrition?: NutritionTargets | null
 }
 
 export interface MetaRow { id: 'meta'; schemaVersion: number; createdAt: ISODateTime }
-export interface Exercise {
-  id: string;
-  nombre: string;
-  variante: string;
-  equipamiento: string;
-  musculoPrincipal: string;
-  musculosSecundarios: string[];
-  patronMovimiento: string;
-  unidadCarga: string;
-  incrementoMinKg: number;
-  rangoRepsDefault: [number, number];
-  rirDefault: number;
-  descansoDefaultSeg: number;
-  notasTecnicas: string;
-  custom: boolean;
-  comparabilityKey: string;
+
+export interface SetEntry {
+  kg: number | null
+  reps: number | null
+  rir: number | null
+  done: boolean
+  doneAt?: number
+}
+
+export interface SessionExercise {
+  key: string // idDía:posición (o extra-N)
+  exerciseId: string
+  sets: number
+  reps: [number, number]
+  rir: number
+  pct?: number
+  rest: number
+  note?: string
+  /** peso que proponía la app al empezar la sesión */
+  suggestedKg: number | null
+  entries: SetEntry[]
+  comment?: string
 }
 
 export interface WorkoutSession {
-  id: string;
-  estado: 'active' | 'paused' | 'finished' | 'abandoned';
-  startedAt: number;
-  finishedAt?: number;
-  planSnapshot: any;
+  id: string
+  status: 'active' | 'finished'
+  startedAt: number
+  finishedAt?: number
+  pausedMs: number
+  pausedAt?: number | null
+  mesoId: string
+  weekIndex: number
+  dayId: string
+  title: string
+  deload: boolean
+  exercises: SessionExercise[]
+  restEndsAt?: number | null
+  restTotal?: number
+  notes?: string
 }
 
-export interface SetLog {
-  id: string;
-  sessionId: string;
-  exerciseId: string;
-  tipo: 'warmup' | 'approach' | 'working';
-  kg: number;
-  reps: number;
-  rirReal: number | 'unknown';
-  timestamp: number;
+export interface RmTest {
+  id: string
+  exerciseId: string
+  date: number
+  kg: number
+  reps: number
+  rir: number
+  e1rm: number
 }
+
+export interface Measurement { id: string; type: 'weight'; date: number; value: number }
+
+export interface Meal {
+  id: string
+  name: string
+  foods: string
+  kcal?: number | null
+  protein?: number | null
+  carbs?: number | null
+  fat?: number | null
+}
+
+export interface MenuDay { id: number; meals: Meal[] } // id = día de la semana (0=domingo)

@@ -3,25 +3,24 @@ import { TABS, useUI } from './app/store'
 import { Icon } from './ui/Icons'
 import { useSettings } from './ui/hooks'
 import Home from './ui/screens/Home'
-// 1. Aquí traemos nuestra nueva pantalla
-import { TrainScreen } from './ui/screens/TrainScreen' 
+import Train from './ui/screens/Train'
 import Plan from './ui/screens/Plan'
+import Nutrition from './ui/screens/Nutrition'
 import Progress from './ui/screens/Progress'
 import SettingsScreen from './ui/screens/Settings'
 
-// 2. Aquí la conectamos al botón "entrenar" del menú
-const SCREENS = { inicio: Home, entrenar: TrainScreen, plan: Plan, progreso: Progress, ajustes: SettingsScreen }
+const SCREENS = { inicio: Home, entrenar: Train, plan: Plan, dieta: Nutrition, progreso: Progress, ajustes: SettingsScreen }
 
 export default function App() {
   const { tab, setTab, updateReady, applyUpdate } = useUI()
   const settings = useSettings()
-  
-  useEffect(() => { 
-    document.documentElement.dataset.theme = settings?.theme ?? 'dark' 
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = settings?.theme ?? 'dark'
   }, [settings?.theme])
-  
+
   const Screen = SCREENS[tab]
-  
+
   return (
     <div className="shell">
       {updateReady && (
