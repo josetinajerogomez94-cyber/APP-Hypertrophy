@@ -1,0 +1,44 @@
+import 'fake-indexeddb/auto'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { HypertrophyDB, SCHEMA_VERSION } from '../../src/persistence/db'
+import { ensureInitialData, saveProfile } from '../../src/persistence/bootstrap'
+import { profileInputSchema } from '../../src/persistence/validate'
+
+let n = 0
+let db: HypertrophyDB
+beforeEach(() => { db = new HypertrophyDB(`test-${++n}`) })
+
+describe('base de datos local', () => {
+  it('crea meta, perfil provisional y ajustes por defecto', async () => {
+    await ensureInitialData(db)
+    expect((await db.meta.get('meta'))?.schemaVersion).toBe(SCHEMA_VERSION)
+    const p = await db.profile.get('profile')
+    expect(p).toMatchObject({ weightKg: 92, heightCm: 196, maxSessionMin: 75, provisional: true, trainingDays: [1, 2, 4, 5], startDate: '2026-11-09' })
+    expect((await db.settings.get('settings'))?.theme).toBe('dark')
+  })
+  it('no sobrescribe datos existentes al volver a inicializar', async () => {
+    await ensureInitialData(db)
+    await saveProfile(db, { weightKg: 90 })
+    await ensureInitialData(db)
+    expect((await db.profile.get('profile'))?.weightKg).toBe(90)
+  })
+  it('guardar el perfil lo confirma y persiste tras cerrar y reabrir', async () => {
+    await ensureInitialData(db)
+    await saveProfile(db, { weightKg: 93.4 })
+    const name = db.name
+    db.close()
+    const reopened = new HypertrophyDB(name)
+    const p = await reopened.profile.get('profile')
+    expect(p?.weightKg).toBe(93.4)
+    expect(p?.provisional).toBe(false)
+    expect((await reopened.settings.get('settings'))?.profileConfirmed).toBe(true)
+  })
+})
+
+describe('validación del perfil', () => {
+  const ok = { weightKg: 92, heightCm: 196, targetWeightKg: 97, maxSessionMin: 75, startDate: '2026-11-09', targetDate: '2027-07-18', trainingDays: [1, 2, 4, 5] }
+  it('acepta datos válidos', () => expect(profileInputSchema.safeParse(ok).success).toBe(true))
+  it('rechaza peso fuera de rango', () => expect(profileInputSchema.safeParse({ ...ok, weightKg: 5 }).success).toBe(false))
+  it('rechaza fecha objetivo anterior al inicio', () => expect(profileInputSchema.safeParse({ ...ok, targetDate: '2026-01-01' }).success).toBe(false))
+  it('rechaza sin días de entrenamiento', () => expect(profileInputSchema.safeParse({ ...ok, trainingDays: [] }).success).toBe(false))
+})
