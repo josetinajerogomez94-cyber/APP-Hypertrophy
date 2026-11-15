@@ -50,10 +50,12 @@ export const FOODS: Record<string, Food> = Object.fromEntries([
   f('pasta', 'Pasta seca', [355, 12.5, 70, 1.5], 'despensa', 500, 'paquete 500 g'),
   f('legumbre', 'Legumbres cocidas (garbanzos/alubias/lentejas)', [115, 7, 14, 2], 'despensa', 400, 'bote grande 400 g escurridos'),
   f('atun', 'Atún al natural', [105, 24, 0, 1], 'despensa', 156, 'pack 3 latas (52 g escurrido c/u)', 52, 'lata'),
-  f('tomate_t', 'Tomate triturado', [30, 1.3, 4.5, 0.2], 'despensa', 400, 'bote 400 g')
+  f('tomate_t', 'Tomate triturado', [30, 1.3, 4.5, 0.2], 'despensa', 400, 'bote 400 g'),
+  f('pan_bar', 'Pan de tostada', [260, 8.5, 52, 1.5], 'despensa', 70, 'tostada')
 ].map(x => [x.id, x]))
 
-export interface Item { food: string; g: number; note?: string }
+/** outside = se toma fuera de casa (cafetería): cuenta en los macros pero no en la lista de la compra */
+export interface Item { food: string; g: number; note?: string; outside?: boolean }
 export interface PlanMeal { slot: 'desayuno' | 'media' | 'almuerzo' | 'merienda' | 'cena'; time: string; name: string; items: Item[]; how: string }
 
 const VERD: Item[] = [{ food: 'verdura', g: 125, note: '1 ración del táper' }, { food: 'aove', g: 10 }]
@@ -62,9 +64,9 @@ const ENSALADA: Item[] = [{ food: 'tomate', g: 150, note: '1 tomate en ensalada'
 // ---------- Tomas fijas ----------
 
 const desayunoSemana = (): PlanMeal => ({
-  slot: 'desayuno', time: '07:00', name: 'Desayuno · Avena con soja',
-  items: [{ food: 'avena', g: 100 }, { food: 'soja', g: 300, note: 'ml' }, { food: 'fruta', g: 150, note: '1 manzana o 2 kiwis' }, { food: 'miel', g: 15 }],
-  how: 'En frío o templado en el cazo 2 min. Café o infusión al gusto. Truco: déjalo hecho la noche antes en un táper (overnight oats).'
+  slot: 'desayuno', time: '07:00', name: 'Al despertar · Café con soja y plátano',
+  items: [{ food: 'soja', g: 100, note: 'ml, en el café' }, { food: 'platano', g: 120 }],
+  how: 'Café con bebida de soja y un plátano nada más levantarte.'
 })
 const desayunoFinde = (): PlanMeal => ({
   slot: 'desayuno', time: '08:30', name: 'Desayuno de finde · Tostadas y huevos',
@@ -73,14 +75,25 @@ const desayunoFinde = (): PlanMeal => ({
 })
 /** +200 kcal por escalón usando solo básicos de despensa (no deja nada a medias). */
 const extra = (b: number): Item[] => (b ? [{ food: 'avena', g: 30 * b, note: `+${200 * b} kcal` }, { food: 'crema', g: 10 * b, note: `+${200 * b} kcal` }, { food: 'miel', g: 10 * b, note: `+${200 * b} kcal` }] : [])
-const shaker = (boost: number): PlanMeal => ({
-  slot: 'media', time: '11:30', name: 'Media mañana · Shaker en el trabajo',
-  items: [{ food: 'whey', g: 10 }, { food: 'avena', g: 80, note: 'mejor en harina' }, { food: 'soja', g: 350, note: 'ml' }, { food: 'crema', g: 20 }, { food: 'platano', g: 120 }, ...extra(boost)],
-  how: 'Lleva los polvos (whey + harina de avena) en el shaker y la soja en una botella. Agita bien. Crema de cacahuete y plátano, aparte o dentro.'
+const shaker = (boost: number, work: boolean): PlanMeal => ({
+  slot: 'media', time: '11:30', name: work ? 'Media mañana · Shaker + tostada (trabajo)' : 'Media mañana · Shaker',
+  items: [
+    { food: 'whey', g: 10 }, { food: 'avena', g: work ? 100 : 60, note: 'mejor en harina' }, { food: 'soja', g: 350, note: 'ml' }, { food: 'crema', g: 20 }, { food: 'platano', g: 120 },
+    ...(work ? [
+      { food: 'pan_bar', g: 70, note: '1 tostada, aprox.', outside: true },
+      { food: 'aove', g: 10, note: 'un chorrito, aprox.', outside: true },
+      { food: 'tomate_t', g: 30, note: 'aprox.', outside: true },
+      { food: 'soja', g: 150, note: 'ml, café con soja · aprox.', outside: true }
+    ] : []),
+    ...extra(boost)
+  ],
+  how: work
+    ? 'Shaker: lleva los polvos (whey + harina de avena) y la soja en una botella; agita bien. Crema de cacahuete y plátano, aparte o dentro. Con él, tu tostada con aceite y tomate y un café con soja de la cafetería (cantidades aproximadas, no hace falta pesar).'
+    : 'Lleva los polvos (whey + harina de avena) en el shaker y la soja en una botella. Agita bien. Crema de cacahuete y plátano, aparte o dentro.'
 })
-const bolRecuperador = (): PlanMeal => ({
+const bolRecuperador = (work: boolean): PlanMeal => ({
   slot: 'merienda', time: '18:45', name: 'Post-entreno · Bol recuperador',
-  items: [{ food: 'queso', g: 250, note: 'media tarrina' }, { food: 'platano', g: 120 }, { food: 'miel', g: 25 }, { food: 'avena', g: 30 }, { food: 'creatina', g: 5, note: '5 g' }],
+  items: [{ food: 'queso', g: 250, note: 'media tarrina' }, { food: 'platano', g: 120 }, { food: 'miel', g: 25 }, { food: 'avena', g: work ? 50 : 30 }, { food: 'creatina', g: 5, note: '5 g' }],
   how: 'Queso batido + plátano en rodajas + miel + avena. Añade la creatina (también los días de descanso).'
 })
 const batidoSabado = (): PlanMeal => ({
@@ -131,9 +144,9 @@ export function dayPlan(weekday: number, boost = 0): PlanMeal[] {
   const weekend = weekday === 0 || weekday === 6
   return [
     weekend ? desayunoFinde() : desayunoSemana(),
-    shaker(boost),
+    shaker(boost, !weekend),
     ALMUERZO[weekday](),
-    weekday === 6 ? batidoSabado() : bolRecuperador(),
+    weekday === 6 ? batidoSabado() : bolRecuperador(!weekend),
     CENA[weekday]()
   ].sort((a, b) => a.time.localeCompare(b.time))
 }
@@ -152,9 +165,12 @@ export function macros(items: Item[]) {
 
 export function itemLabel(it: Item): string {
   const x = FOODS[it.food]
-  const qty = it.note === 'ml' ? `${it.g} ml` : `${it.g} g`
-  const note = it.note && it.note !== 'ml' ? ` (${it.note})` : ''
-  return `${qty} ${x.name.toLowerCase()}${note}`
+  const ml = it.note?.startsWith('ml')
+  const qty = ml ? `${it.g} ml` : `${it.g} g`
+  const rest = ml ? it.note!.replace(/^ml,?\s*/, '') : it.note
+  const note = rest ? ` (${rest})` : ''
+  const where = it.outside ? ' ☕' : ''
+  return `${qty} ${x.name.toLowerCase()}${note}${where}`
 }
 
 export const BASE_TARGETS = { kcal: 3350, protein: 200, carbs: 430, fat: 88 }
@@ -173,7 +189,7 @@ export interface ShopLine { food: Food; grams: number; packs: number; leftover: 
 
 function needFor(days: readonly number[], mains: readonly (readonly [number, PlanMeal['slot']])[], boost: number): Record<string, number> {
   const need: Record<string, number> = {}
-  const add = (m: PlanMeal) => m.items.forEach(i => { need[i.food] = (need[i.food] ?? 0) + i.g })
+  const add = (m: PlanMeal) => m.items.forEach(i => { if (!i.outside) need[i.food] = (need[i.food] ?? 0) + i.g })
   for (const d of days) dayPlan(d, boost).filter(m => m.slot !== 'almuerzo' && m.slot !== 'cena').forEach(add)
   for (const [d, slot] of mains) add(dayPlan(d, boost).find(m => m.slot === slot)!)
   return need
@@ -182,7 +198,7 @@ function needFor(days: readonly number[], mains: readonly (readonly [number, Pla
 /** Consumo total de la semana por alimento. */
 export function weeklyNeed(boost = 0): Record<string, number> {
   const need: Record<string, number> = {}
-  for (let d = 0; d < 7; d++) dayPlan(d, boost).forEach(m => m.items.forEach(i => { need[i.food] = (need[i.food] ?? 0) + i.g }))
+  for (let d = 0; d < 7; d++) dayPlan(d, boost).forEach(m => m.items.forEach(i => { if (!i.outside) need[i.food] = (need[i.food] ?? 0) + i.g }))
   return need
 }
 
