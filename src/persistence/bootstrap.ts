@@ -14,11 +14,11 @@ function nextMonday(): string {
 
 export const defaultProfile = (): Profile => ({
   id: 'profile',
-  weightKg: 92,
+  weightKg: 89,
   heightCm: 196,
   level: 'avanzado',
   goal: 'Ganar fuerza y masa muscular',
-  targetWeightKg: 97,
+  targetWeightKg: 98,
   startDate: nextMonday(),
   maxSessionMin: 75,
   trainingDays: [1, 3, 5],
@@ -39,7 +39,11 @@ export const defaultSettings = (): AppSettings => ({
   swaps: {},
   sound: true,
   keepAwake: true,
-  nutrition: null
+  nutrition: null,
+  nutritionBoost: 0,
+  nutritionStart: null,
+  nutritionStartWeight: 89,
+  shopChecked: {}
 })
 
 /** Crea los registros iniciales solo si no existen. Nunca sobrescribe datos del usuario. */

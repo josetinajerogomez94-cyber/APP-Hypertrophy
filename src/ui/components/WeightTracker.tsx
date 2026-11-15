@@ -28,7 +28,7 @@ export function WeightTracker() {
         <input className="grow" type="text" inputMode="decimal" placeholder={String(last ?? profile?.weightKg ?? 'kg')} value={value} onChange={e => setValue(e.target.value)} aria-label="Peso de hoy en kg" />
         <button className="btn primary small" style={{ minHeight: 52 }} onClick={save}>Guardar hoy</button>
       </div>
-      <p className="tiny muted mt">Pésate en ayunas, 2-3 días por semana. Para ganar músculo sin mucha grasa, lo ideal es subir ~0,25-0,5 kg al mes.</p>
+      <p className="tiny muted mt">Pésate en ayunas, después de ir al baño, 3-4 días por semana. Fíjate en la media, no en un día suelto. Ritmo ideal de volumen limpio: ~0,25 kg por semana (≈1 kg al mes).</p>
       {points.length > 1 ? (
         <>
           <div className="kv small"><span className="muted">Cambio total</span><b className={last! - first! >= 0 ? 'ok' : 'warn'}>{last! - first! >= 0 ? '+' : ''}{(last! - first!).toFixed(1)} kg</b></div>

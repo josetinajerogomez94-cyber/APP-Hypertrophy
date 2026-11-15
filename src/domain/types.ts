@@ -35,6 +35,16 @@ export interface AppSettings {
   sound?: boolean
   keepAwake?: boolean
   nutrition?: NutritionTargets | null
+  /** escalones de +200 kcal activados (0, 1 o 2) */
+  nutritionBoost?: number
+  /** Día 0 del plan nutricional y peso de ese día */
+  nutritionStart?: string | null
+  nutritionStartWeight?: number | null
+  /** casillas marcadas de cada lista de la compra */
+  shopChecked?: Record<string, string[]>
+  /** comidas marcadas como hechas (solo se guarda el día actual) */
+  mealsDone?: { date: string; slots: string[] }
+  water?: { date: string; ml: number }
 }
 
 export interface MetaRow { id: 'meta'; schemaVersion: number; createdAt: ISODateTime }

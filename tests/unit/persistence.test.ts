@@ -13,7 +13,7 @@ describe('base de datos local', () => {
     await ensureInitialData(db)
     expect((await db.meta.get('meta'))?.schemaVersion).toBe(SCHEMA_VERSION)
     const p = await db.profile.get('profile')
-    expect(p).toMatchObject({ weightKg: 92, heightCm: 196, provisional: true })
+    expect(p).toMatchObject({ weightKg: 89, heightCm: 196, provisional: true })
     const s = await db.settings.get('settings')
     expect(s).toMatchObject({ theme: 'dark', currentMeso: 0, sound: true })
   })

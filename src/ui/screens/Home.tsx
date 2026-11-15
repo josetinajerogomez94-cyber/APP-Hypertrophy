@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { useLiveQuery } from 'dexie-react-hooks'
 import { useUI } from '../../app/store'
 import { db } from '../../persistence/db'
 import { saveProfile, updateSettings } from '../../persistence/bootstrap'
-import { MACROCYCLE, TOTAL_WEEKS, calendarPosition, formatDate, mesoSchedule, parseISODate } from '../../domain/program'
+import { MACROCYCLE, TOTAL_WEEKS, calendarPosition, formatDate, mesoSchedule, parseISODate, toISODate } from '../../domain/program'
+import { dayPlan } from '../../domain/nutritionPlan'
 import { formatClock, nextDayIndex, sessionSeconds, sessionVolume } from '../../app/training'
 import { useActiveSession, useFinishedSessions, useProfile, useSettings } from '../hooks'
 import { Icon } from '../Icons'
@@ -13,7 +13,6 @@ export default function Home() {
   const settings = useSettings()
   const sessions = useFinishedSessions()
   const active = useActiveSession()
-  const menuToday = useLiveQuery(() => db.menu.get(new Date().getDay()), [])
   const { setTab, setPick } = useUI()
   if (!profile || !settings || !sessions || active === undefined) return <p className="muted">Cargando…</p>
 
@@ -102,9 +101,12 @@ export default function Home() {
 
       <section className="card">
         <div className="h-row mb0"><h2 className="mb0">Menú de hoy</h2><button className="btn small ghost" onClick={() => setTab('dieta')}>Ver</button></div>
-        {menuToday?.meals?.length
-          ? <ul className="list mt">{menuToday.meals.map(m => <li key={m.id}><b className="small">{m.name}</b><div className="small muted">{m.foods || '—'}</div></li>)}</ul>
-          : <p className="small muted mt mb0">Aún no has apuntado el menú de hoy.</p>}
+        <ul className="list mt">
+          {dayPlan(new Date().getDay(), settings.nutritionBoost ?? 0).map(m => {
+            const done = settings.mealsDone?.date === toISODate(new Date()) && settings.mealsDone.slots.includes(m.slot)
+            return <li key={m.slot} className="row small"><span className="chip">{m.time}</span><span className={`grow${done ? ' muted' : ''}`} style={done ? { textDecoration: 'line-through' } : undefined}>{m.name.split(' · ')[1] ?? m.name}</span>{done && <span className="ok">✓</span>}</li>
+          })}
+        </ul>
       </section>
 
       {sessions.length > 0 && (
