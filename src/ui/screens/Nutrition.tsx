@@ -176,7 +176,7 @@ function ShopRow({ l, done, weekly, onToggle }: { l: ShopLine; done: boolean; we
     ? `Gastas ~${l.grams >= 1000 ? `${(l.grams / 1000).toFixed(1).replace('.', ',')} kg` : `${l.grams} g`}/semana · 1 ${l.food.packName} dura ~${Math.max(1, Math.round(l.food.pack / l.grams * 7))} días`
     : l.food.packName === 'unidad' || l.food.packName === 'pieza'
       ? `${l.units} ${l.food.unitName}${(l.units ?? 0) > 1 ? 's' : ''}`
-      : `${l.packs} × ${l.food.packName}${l.leftover >= l.food.pack * 0.2 ? ` · sobran ~${l.leftover} g` : ''}`
+      : `${l.packs} × ${l.food.packName}`
   return (
     <li>
       <label className="row" style={{ fontWeight: 500, margin: 0, opacity: done ? 0.5 : 1 }}>
@@ -273,7 +273,7 @@ function Weight({ s }: { s: AppSettings }) {
           {[0, 1, 2].map(b => <button key={b} aria-pressed={boost === b} onClick={() => updateSettings(db, { nutritionBoost: b })}>{b === 0 ? 'Base' : `+${200 * b} kcal`}</button>)}
         </div>
         <p className="small mt mb0">Objetivo actual: <b>{t.kcal} kcal</b> · P {t.protein} g · HC {t.carbs} g · G {t.fat} g</p>
-        <p className="tiny muted">Cada escalón de +200 kcal añade 20 g de avena al shaker y 30 g de pasta (o 40 g de pan los días de patata) al almuerzo. El menú y la lista de la compra se actualizan solos.</p>
+        <p className="tiny muted">Cada escalón de +200 kcal añade al shaker 30 g de avena, 10 g de crema de cacahuete y 10 g de miel. Son básicos de despensa, así que no deja ningún envase a medias. El menú se actualiza solo.</p>
       </section>
 
       <WeightTracker />

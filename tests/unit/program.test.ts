@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { MACROCYCLE, TOTAL_WEEKS, MAX_SESSION_MIN, calendarPosition, estimateMinutes, mesoSchedule, resolveTarget, weeklyVolume } from '../../src/domain/program'
-import { EXERCISES } from '../../src/domain/exercises'
+import { EXERCISES, getExercise } from '../../src/domain/exercises'
 import { calcularE1RM } from '../../src/domain/e1rm'
 import { suggestNext } from '../../src/domain/progression'
 
@@ -21,10 +21,24 @@ describe('macrociclo', () => {
     const ids = new Set(EXERCISES.map(e => e.id))
     for (const m of MACROCYCLE) for (const d of m.days) for (const p of d.items) expect(ids.has(p.ex), p.ex).toBe(true)
   })
-  it('desde el M2 los músculos prioritarios reciben al menos 10 series/semana', () => {
+  it('respeta la prioridad pecho > pierna > hombro > espalda y no hay gemelos', () => {
     for (const m of MACROCYCLE.slice(1)) {
       const v = weeklyVolume(m, 1)
-      for (const k of ['pecho', 'espalda', 'hombros', 'cuadriceps'] as const) expect(v[k], `${m.short} ${k}`).toBeGreaterThanOrEqual(10)
+      const legs = v.cuadriceps + v.isquios + v.gluteos
+      expect(v.pecho, `${m.short} pecho`).toBeGreaterThanOrEqual(15)
+      expect(v.pecho, `${m.short} pecho >= hombro`).toBeGreaterThanOrEqual(v.hombros)
+      expect(v.hombros, `${m.short} hombro >= 12`).toBeGreaterThanOrEqual(12)
+      expect(v.espalda, `${m.short} espalda >= 10`).toBeGreaterThanOrEqual(10)
+      expect(legs, `${m.short} pierna`).toBeGreaterThanOrEqual(25)
+      for (const k of ['cuadriceps', 'isquios', 'gluteos'] as const) expect(v[k], `${m.short} ${k}`).toBeGreaterThanOrEqual(8)
+      expect(v.gemelos).toBe(0)
+    }
+  })
+  it('los ejercicios de cada día van agrupados por músculo (no se repite un músculo después de cambiar)', () => {
+    for (const m of MACROCYCLE) for (const d of m.days) {
+      const seq = d.items.map(p => getExercise(p.ex).primary)
+      const seen = new Set<string>()
+      seq.forEach((mu, i) => { if (i > 0 && seq[i - 1] !== mu) { expect(seen.has(mu), `${m.short} ${d.name}: ${seq.join(' → ')}`).toBe(false) } seen.add(mu) })
     }
   })
   it('la descarga reduce series y porcentaje', () => {

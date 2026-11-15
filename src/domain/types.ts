@@ -45,6 +45,7 @@ export interface AppSettings {
   /** comidas marcadas como hechas (solo se guarda el día actual) */
   mealsDone?: { date: string; slots: string[] }
   water?: { date: string; ml: number }
+  planVersion?: number
 }
 
 export interface MetaRow { id: 'meta'; schemaVersion: number; createdAt: ISODateTime }

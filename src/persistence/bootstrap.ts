@@ -1,5 +1,5 @@
 import type { AppSettings, Profile } from '../domain/types'
-import { toISODate } from '../domain/program'
+import { PLAN_VERSION, toISODate } from '../domain/program'
 import { SCHEMA_VERSION, type HypertrophyDB } from './db'
 
 const now = () => new Date().toISOString()
@@ -43,7 +43,8 @@ export const defaultSettings = (): AppSettings => ({
   nutritionBoost: 0,
   nutritionStart: null,
   nutritionStartWeight: 89,
-  shopChecked: {}
+  shopChecked: {},
+  planVersion: PLAN_VERSION
 })
 
 /** Crea los registros iniciales solo si no existen. Nunca sobrescribe datos del usuario. */
@@ -53,7 +54,12 @@ export async function ensureInitialData(db: HypertrophyDB): Promise<void> {
     if (!(await db.profile.get('profile'))) await db.profile.put(defaultProfile())
     const s = await db.settings.get('settings')
     if (!s) await db.settings.put(defaultSettings())
-    else await db.settings.put({ ...defaultSettings(), ...s }) // añade campos nuevos sin tocar los existentes
+    else {
+      const merged = { ...defaultSettings(), ...s } // añade campos nuevos sin tocar los existentes
+      // si cambia el orden de los ejercicios del plan, las sustituciones guardadas ya no apuntan al mismo hueco
+      if ((s.planVersion ?? 1) !== PLAN_VERSION) { merged.swaps = {}; merged.planVersion = PLAN_VERSION }
+      await db.settings.put(merged)
+    }
   })
 }
 
