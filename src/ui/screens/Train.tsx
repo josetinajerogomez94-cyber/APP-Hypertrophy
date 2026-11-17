@@ -13,7 +13,8 @@ import {
 import { beep, unlockAudio } from '../../app/sound'
 import { useActiveSession, useFinishedSessions, useProfile, useRMs, useSettings, useTick } from '../hooks'
 import { RmTestForm } from '../components/RmTestForm'
-import { Sheet, num } from '../components/Sheet'
+import { Sheet, NumInput } from '../components/Sheet'
+import { lockScreenActive, notifyRestEnd, setRestConfig, startRestAudio, stopRestAudio } from '../../app/restAlert'
 
 export default function Train() {
   const active = useActiveSession()
@@ -172,6 +173,9 @@ function ActiveWorkout({ initial }: { initial: WorkoutSession }) {
   const [addOpen, setAddOpen] = useState(false)
   useTick(1000)
   useWakeLock(settings?.keepAwake !== false)
+  useEffect(() => {
+    setRestConfig({ lockScreen: settings?.lockScreenTimer === true, sound: settings?.sound !== false, notify: settings?.restNotify === true })
+  }, [settings?.lockScreenTimer, settings?.sound, settings?.restNotify])
 
   const save = (next: WorkoutSession) => { setS(next); db.sessions.put(next) }
   const meso = MACROCYCLE.find(m => m.id === s.mesoId)!
@@ -194,6 +198,7 @@ function ActiveWorkout({ initial }: { initial: WorkoutSession }) {
   }
   async function discard() {
     if (!confirm('¿Descartar este entrenamiento? Se borrará todo lo apuntado en esta sesión.')) return
+    stopRestAudio()
     await db.sessions.delete(s.id)
   }
   function addExercise(id: string) {
@@ -301,6 +306,7 @@ function ExerciseCard({ ex, index, session, history, rms, baseId, onChange, onRe
     if (kg == null || reps == null) { setErrRow(i); setTimeout(() => setErrRow(null), 1500); return }
     const entries = ex.entries.map((x, j) => (j === i ? { ...x, kg, reps, rir: x.rir ?? ex.rir, done: true, doneAt: Date.now() } : x))
     const isLastOfSession = session.exercises.every(se => se === ex ? entries.every(z => z.done) : se.entries.every(z => z.done))
+    if (!isLastOfSession) startRestAudio(ex.rest, ex.rest, def.name) // dentro del toque: iOS lo permite
     onChange({ ...ex, entries }, isLastOfSession ? undefined : ex.rest)
   }
 
@@ -353,10 +359,10 @@ function ExerciseCard({ ex, index, session, history, rms, baseId, onChange, onRe
       {ex.entries.map((e, i) => (
         <div key={i} className={`set-row${e.done ? ' done' : ''}${errRow === i ? ' err' : ''}`}>
           <span className="num">{i + 1}</span>
-          <input type="text" inputMode="decimal" aria-label={`Kilos serie ${i + 1}`} placeholder={String(placeholderKg(i) ?? 'kg')}
-            value={e.kg ?? ''} onChange={v => setEntry(i, { kg: num(v.target.value) })} />
-          <input type="text" inputMode="numeric" aria-label={`Repeticiones serie ${i + 1}`} placeholder={repsLabel}
-            value={e.reps ?? ''} onChange={v => setEntry(i, { reps: num(v.target.value) })} />
+          <NumInput aria-label={`Kilos serie ${i + 1}`} placeholder={String(placeholderKg(i) ?? 'kg').replace('.', ',')}
+            value={e.kg} onValue={n => setEntry(i, { kg: n })} />
+          <NumInput decimal={false} aria-label={`Repeticiones serie ${i + 1}`} placeholder={repsLabel}
+            value={e.reps} onValue={n => setEntry(i, { reps: n == null ? null : Math.round(n) })} />
           <select aria-label={`RIR serie ${i + 1}`} value={e.rir ?? ex.rir} onChange={v => setEntry(i, { rir: Number(v.target.value) })}>
             {[0, 1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
           </select>
@@ -415,7 +421,9 @@ function RestTimer({ s, sound, onChange }: { s: WorkoutSession; sound: boolean; 
   useEffect(() => {
     if (!endsAt || remaining > 0 || alerted.current === endsAt) return
     alerted.current = endsAt
+    if (lockScreenActive()) return // el pitido y la notificación los da el audio de la pantalla de bloqueo
     if (sound && Date.now() - endsAt < 4000) beep()
+    if (document.visibilityState === 'hidden') notifyRestEnd()
   }, [endsAt, remaining, sound])
 
   useEffect(() => { // se oculta solo tras 2 minutos sin tocar nada
@@ -433,10 +441,10 @@ function RestTimer({ s, sound, onChange }: { s: WorkoutSession; sound: boolean; 
           <div className="clock">{over ? `+${formatClock(-remaining)}` : formatClock(remaining)}</div>
         </div>
         {!over && <>
-          <button className="btn small" onClick={() => onChange(endsAt - 15000)}>−15</button>
-          <button className="btn small" onClick={() => onChange(endsAt + 15000, total + 15)}>+15</button>
+          <button className="btn small" onClick={() => { startRestAudio(remaining - 15, total); onChange(endsAt - 15000) }}>−15</button>
+          <button className="btn small" onClick={() => { startRestAudio(remaining + 15, total + 15); onChange(endsAt + 15000, total + 15) }}>+15</button>
         </>}
-        <button className="btn small primary" onClick={() => onChange(null)}>{over ? 'OK' : 'Saltar'}</button>
+        <button className="btn small primary" onClick={() => { stopRestAudio(); onChange(null) }}>{over ? 'OK' : 'Saltar'}</button>
       </div>
       {!over && <div className="bar mt"><i style={{ width: `${Math.max(0, Math.min(100, (remaining / total) * 100))}%` }} /></div>}
     </div>
@@ -459,6 +467,7 @@ function FinishSheet({ s, history, onClose, onConfirm }: {
   })
 
   function confirmFinish() {
+    stopRestAudio()
     const now = Date.now()
     const clean: WorkoutSession = {
       ...s, status: 'finished', finishedAt: now, restEndsAt: null,

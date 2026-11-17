@@ -5,6 +5,7 @@ import { profileInputSchema } from '../../persistence/validate'
 import { useUI } from '../../app/store'
 import { useProfile, useSettings } from '../hooks'
 import { BackupManager } from '../components/BackupManager'
+import { notificationsSupported, requestNotifications } from '../../app/restAlert'
 import { Icon } from '../Icons'
 
 export default function SettingsScreen() {
@@ -16,6 +17,7 @@ export default function SettingsScreen() {
   const [saved, setSaved] = useState(false)
   const [persisted, setPersisted] = useState<boolean | null>(null)
   const [quota, setQuota] = useState('')
+  const [notifState, setNotifState] = useState<NotificationPermission | 'unsupported'>(notificationsSupported() ? Notification.permission : 'unsupported')
 
   useEffect(() => {
     if (!profile) return
@@ -82,7 +84,17 @@ export default function SettingsScreen() {
         <h2>Entrenamiento</h2>
         <Toggle label="Pitido al acabar el descanso" value={settings?.sound !== false} onChange={v => updateSettings(db, { sound: v })} />
         <Toggle label="Pantalla siempre encendida al entrenar" value={settings?.keepAwake !== false} onChange={v => updateSettings(db, { keepAwake: v })} />
-        <p className="tiny muted mt mb0">En iPhone el pitido suena con la app abierta y el modo silencio desactivado. Si bloqueas el móvil, al volver verás cuánto tiempo llevas de descanso.</p>
+        <Toggle label="Descanso en la pantalla de bloqueo" value={settings?.lockScreenTimer === true} onChange={v => updateSettings(db, { lockScreenTimer: v })} />
+        <p className="tiny muted mb0">Muestra la cuenta atrás en la pantalla de bloqueo (como si fuera música) y suena el pitido aunque el móvil esté bloqueado. <b>Ojo: iOS pausa tu música</b> (Spotify, Apple Music…) cada vez que empieza un descanso.</p>
+        <div className="kv mt"><span>Notificación al acabar el descanso</span>
+          <b className="small">{notifState === 'granted' ? (settings?.restNotify ? 'Activada' : 'Desactivada') : notifState === 'denied' ? 'Bloqueada' : notifState === 'unsupported' ? 'No disponible' : 'Sin permiso'}</b></div>
+        {notifState === 'granted'
+          ? <button className="btn small" onClick={() => updateSettings(db, { restNotify: !settings?.restNotify })}>{settings?.restNotify ? 'Desactivar notificación' : 'Activar notificación'}</button>
+          : notifState === 'default'
+            ? <button className="btn small" onClick={async () => { const r = await requestNotifications(); setNotifState(r); if (r === 'granted') updateSettings(db, { restNotify: true }) }}>Permitir notificaciones</button>
+            : <p className="tiny muted mb0">{notifState === 'denied' ? 'Las bloqueaste. Actívalas en Ajustes del iPhone → Notificaciones → Hypertrophy.' : 'Solo funcionan con la app instalada en la pantalla de inicio (iOS 16.4 o superior).'}</p>}
+        <p className="tiny muted mb0 mt">Con la pantalla bloqueada, la notificación solo llega si también está activado «Descanso en la pantalla de bloqueo».</p>
+        <p className="tiny muted mt mb0">Sin la opción de pantalla de bloqueo, el pitido solo suena con la app abierta y el modo silencio quitado.</p>
       </section>
 
       <section className="card">

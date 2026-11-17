@@ -78,3 +78,12 @@ describe('cálculos', () => {
     expect(suggestNext(null, { reps: [8, 10], rir: 2 }, 'bench').kg).toBeNull()
   })
 })
+
+import { buildRestWav } from '../../src/app/restAlert'
+describe('audio del descanso', () => {
+  it('dura el descanso + los pitidos', () => {
+    const b = buildRestWav(90, true)
+    expect(b.size).toBe(44 + Math.round(91.1 * 8000))
+    expect(buildRestWav(90, false).size).toBe(44 + Math.round(90.2 * 8000))
+  })
+})

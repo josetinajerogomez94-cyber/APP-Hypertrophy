@@ -46,6 +46,10 @@ export interface AppSettings {
   mealsDone?: { date: string; slots: string[] }
   water?: { date: string; ml: number }
   planVersion?: number
+  /** temporizador de descanso en la pantalla de bloqueo (reproduce audio) */
+  lockScreenTimer?: boolean
+  /** notificación al terminar el descanso */
+  restNotify?: boolean
 }
 
 export interface MetaRow { id: 'meta'; schemaVersion: number; createdAt: ISODateTime }
