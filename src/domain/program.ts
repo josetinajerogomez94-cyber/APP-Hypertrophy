@@ -80,8 +80,8 @@ export const MACROCYCLE: Mesocycle[] = [
         P('chest_row', 3, [8, 10], 2, 120),
         P('lat_pulldown', 3, [8, 12], 2, 90)
       ] },
-      { id: 'm1d2', name: 'Pierna', focus: 'Cuádriceps → isquios → glúteo', tests: ['squat', 'deadlift'], items: [
-        P('squat', 3, [6, 8], 2, 180),
+      { id: 'm1d2', name: 'Pierna', focus: 'Cuádriceps → isquios → glúteo', tests: ['belt_squat', 'deadlift'], items: [
+        P('belt_squat', 3, [6, 8], 2, 180),
         P('leg_press', 3, [10, 12], 2, 120),
         P('leg_ext', 3, [12, 15], 1, 60),
         P('rdl', 3, [8, 10], 2, 150),
@@ -121,7 +121,7 @@ export const MACROCYCLE: Mesocycle[] = [
         P('pushdown', 2, [10, 15], 1, 60, { note: 'Brazos: opcional si vas justo de tiempo.' })
       ] },
       { id: 'm2d2', name: 'Pierna A', focus: 'Cuádriceps → isquios → glúteo', items: [
-        P('squat', 4, [6, 8], 2, 180),
+        P('belt_squat', 4, [6, 8], 2, 180),
         P('leg_press', 3, [10, 12], 2, 120),
         P('leg_ext', 3, [12, 15], 1, 60),
         P('seated_curl', 3, [10, 12], 1, 75),
@@ -149,7 +149,7 @@ export const MACROCYCLE: Mesocycle[] = [
   {
     id: 'm3', short: 'M3', name: 'Fuerza-Hipertrofia', color: '#B794F4',
     goal: 'Ganar fuerza en los básicos manteniendo el volumen',
-    description: 'Cada bloque empieza por su básico a porcentaje de tu 1RM (banca, sentadilla, militar y peso muerto), subiendo un 2,5 % por semana. El resto, hipertrofia. La 5ª semana es descarga con nuevo test de RM.',
+    description: 'Cada bloque empieza por su básico a porcentaje de tu 1RM (banca, belt squat, militar y peso muerto), subiendo un 2,5 % por semana. El resto, hipertrofia. La 5ª semana es descarga con nuevo test de RM.',
     weeks: [
       { label: 'Semana 1' },
       { label: 'Semana 2', pctAdj: 2.5 },
@@ -166,8 +166,8 @@ export const MACROCYCLE: Mesocycle[] = [
         P('bb_row', 3, [6, 8], 2, 150),
         P('lat_pulldown', 3, [8, 12], 2, 90)
       ] },
-      { id: 'm3d2', name: 'Pierna A', focus: 'Cuádriceps (fuerza en sentadilla) → isquios → glúteo', tests: ['squat'], items: [
-        P('squat', 4, 5, 2, 180, { pct: 75 }),
+      { id: 'm3d2', name: 'Pierna A', focus: 'Cuádriceps (fuerza en belt squat) → isquios → glúteo', tests: ['belt_squat'], items: [
+        P('belt_squat', 4, 5, 2, 180, { pct: 75 }),
         P('leg_press', 3, [8, 12], 2, 120),
         P('leg_ext', 3, [12, 15], 1, 60),
         P('seated_curl', 3, [10, 12], 1, 75),
@@ -231,7 +231,7 @@ export const MACROCYCLE: Mesocycle[] = [
         P('rdl', 4, [8, 10], 2, 150),
         P('lying_curl', 3, [10, 12], 1, 75),
         P('hip_thrust', 3, [10, 12], 2, 90),
-        P('squat', 3, [8, 10], 2, 150),
+        P('belt_squat', 3, [8, 10], 2, 150),
         P('bulgarian', 3, [8, 12], 2, 75)
       ] }
     ]
@@ -255,8 +255,8 @@ export const MACROCYCLE: Mesocycle[] = [
         P('bb_row', 3, [6, 8], 2, 150),
         P('lat_pulldown', 3, [8, 12], 2, 90)
       ] },
-      { id: 'm5d2', name: 'Pierna A', focus: 'Cuádriceps (fuerza en sentadilla) → isquios → glúteo', tests: ['squat'], items: [
-        P('squat', 4, 4, 2, 210, { pct: 80 }),
+      { id: 'm5d2', name: 'Pierna A', focus: 'Cuádriceps (fuerza en belt squat) → isquios → glúteo', tests: ['belt_squat'], items: [
+        P('belt_squat', 4, 4, 2, 210, { pct: 80 }),
         P('leg_press', 3, [8, 10], 2, 120),
         P('leg_ext', 3, [12, 15], 1, 60),
         P('seated_curl', 3, [8, 12], 1, 75),
@@ -301,7 +301,7 @@ export const MACROCYCLE: Mesocycle[] = [
         P('skull', 2, [8, 12], 1, 60, { note: 'Brazos: opcional si vas justo de tiempo.' })
       ] },
       { id: 'm6d2', name: 'Pierna A', focus: 'Cuádriceps → isquios → glúteo', items: [
-        P('squat', 4, [6, 8], 2, 180),
+        P('belt_squat', 4, [6, 8], 2, 180),
         P('leg_press', 3, [10, 15], 2, 120),
         P('leg_ext', 3, [12, 15], 1, 60),
         P('seated_curl', 3, [10, 12], 1, 75),
@@ -454,10 +454,10 @@ export function roundLoad(kg: number, step = 2.5): number {
 }
 
 /** Calentamiento por aproximación para un peso de trabajo. */
-export function warmupRamp(workKg: number): { pct: number; kg: number; reps: number }[] {
+export function warmupRamp(workKg: number, bar = true): { pct: number; kg: number; reps: number }[] {
   if (!workKg || workKg < 30) return []
   return [
-    { pct: 0, kg: 20, reps: 10 },
+    ...(bar ? [{ pct: 0, kg: 20, reps: 10 }] : []),
     { pct: 40, kg: roundLoad(workKg * 0.4), reps: 8 },
     { pct: 60, kg: roundLoad(workKg * 0.6), reps: 5 },
     { pct: 75, kg: roundLoad(workKg * 0.75), reps: 3 },

@@ -324,7 +324,7 @@ function ExerciseCard({ ex, index, session, history, rms, baseId, onChange, onRe
     : suggestNext(last, { reps: ex.reps, rir: ex.rir, deload: session.deload }, ex.exerciseId)
   const repsLabel = ex.reps[0] === ex.reps[1] ? `${ex.reps[0]}` : `${ex.reps[0]}-${ex.reps[1]}`
   const workKg = ex.suggestedKg ?? sug.kg ?? null
-  const ramp = def.compound && workKg ? warmupRamp(workKg) : []
+  const ramp = def.compound && workKg ? warmupRamp(workKg, !!def.bar) : []
 
   const setEntry = (i: number, patch: Partial<SessionExercise['entries'][number]>) =>
     onChange({ ...ex, entries: ex.entries.map((e, j) => (j === i ? { ...e, ...patch } : e)) })
