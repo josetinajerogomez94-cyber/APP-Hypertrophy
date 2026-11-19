@@ -87,3 +87,36 @@ describe('audio del descanso', () => {
     expect(buildRestWav(90, false).size).toBe(44 + Math.round(90.2 * 8000))
   })
 })
+
+import { dayTimes, plannedFor, MORNING_WINDOW } from '../../src/domain/schedule'
+import { WARMUPS, warmupFor } from '../../src/domain/warmups'
+describe('horario', () => {
+  const start = '2026-11-23' // lunes
+  it('M1: lunes tarde, miércoles y viernes', () => {
+    const names = [23, 24, 25, 26, 27, 28, 29].map(d => plannedFor(new Date(2026, 10, d), start)?.name ?? '-')
+    expect(names).toEqual(['Torso A', '-', 'Pierna', '-', 'Torso B', '-', '-'])
+    expect(plannedFor(new Date(2026, 10, 23), start)?.afternoon).toBe(true)
+  })
+  it('M2: lunes tarde, martes, jueves y viernes', () => {
+    const names = [21, 22, 23, 24, 25, 26, 27].map(d => plannedFor(new Date(2026, 11, d), start)?.name ?? '-')
+    expect(names).toEqual(['Torso A', 'Pierna A', '-', 'Torso B', 'Pierna B', '-', '-'])
+  })
+  it('mañana de entreno: 6:00 → gym 6:30-7:40 → casa 7:50 → salir 8:20 → cama 22:00', () => {
+    const t = dayTimes(new Date(2026, 11, 22), start) // martes M2, miércoles descanso
+    expect([t.wake, t.gym!.start, t.gym!.end, t.home, t.leave].map(m => `${Math.floor(m! / 60)}:${String(m! % 60).padStart(2, '0')}`)).toEqual(['6:00', '6:30', '7:40', '7:50', '8:20'])
+    const mon = dayTimes(new Date(2026, 11, 21), start) // lunes → martes se entrena por la mañana
+    expect(mon.bed).toBe(22 * 60)
+  })
+  it('las sesiones de mañana caben en la franja (quitando brazos opcionales)', () => {
+    for (let d = 0; d < 7 * 26; d++) {
+      const date = new Date(2026, 10, 23 + d), p = plannedFor(date, start)
+      if (p && !p.afternoon) expect(p.minutes, `${date.toDateString()} ${p.name}`).toBeLessThanOrEqual(MORNING_WINDOW + 5)
+    }
+  })
+  it('cada día tiene su calentamiento', () => {
+    expect(warmupFor('Torso A')).toBe(WARMUPS.torsoA)
+    expect(warmupFor('Torso B')).toBe(WARMUPS.torsoB)
+    expect(warmupFor('Pierna')).toBe(WARMUPS.piernaA)
+    expect(warmupFor('Pierna B')).toBe(WARMUPS.piernaB)
+  })
+})

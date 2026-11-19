@@ -5,11 +5,12 @@ import { useSettings } from './ui/hooks'
 import Home from './ui/screens/Home'
 import Train from './ui/screens/Train'
 import Plan from './ui/screens/Plan'
+import Agenda from './ui/screens/Agenda'
 import Nutrition from './ui/screens/Nutrition'
 import Progress from './ui/screens/Progress'
 import SettingsScreen from './ui/screens/Settings'
 
-const SCREENS = { inicio: Home, entrenar: Train, plan: Plan, dieta: Nutrition, progreso: Progress, ajustes: SettingsScreen }
+const SCREENS = { inicio: Home, entrenar: Train, agenda: Agenda, plan: Plan, dieta: Nutrition, progreso: Progress, ajustes: SettingsScreen }
 
 export default function App() {
   const { tab, setTab, updateReady, applyUpdate } = useUI()

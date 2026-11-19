@@ -1,14 +1,15 @@
 import { create } from 'zustand'
 
-export type Tab = 'inicio' | 'entrenar' | 'plan' | 'dieta' | 'progreso' | 'ajustes'
+export type Tab = 'inicio' | 'entrenar' | 'agenda' | 'plan' | 'dieta' | 'progreso' | 'ajustes'
 export const TABS: { id: Tab; label: string }[] = [
   { id: 'inicio', label: 'Inicio' },
   { id: 'entrenar', label: 'Entrenar' },
+  { id: 'agenda', label: 'Agenda' },
   { id: 'plan', label: 'Plan' },
   { id: 'dieta', label: 'Dieta' },
   { id: 'progreso', label: 'Progreso' }
 ]
-const ALL: Tab[] = ['inicio', 'entrenar', 'plan', 'dieta', 'progreso', 'ajustes']
+const ALL: Tab[] = ['inicio', 'entrenar', 'agenda', 'plan', 'dieta', 'progreso', 'ajustes']
 
 const fromHash = (): Tab => {
   const h = window.location.hash.replace('#/', '') as Tab

@@ -13,6 +13,8 @@ import {
 import { beep, unlockAudio } from '../../app/sound'
 import { useActiveSession, useFinishedSessions, useProfile, useRMs, useSettings, useTick } from '../hooks'
 import { RmTestForm } from '../components/RmTestForm'
+import { warmupFor } from '../../domain/warmups'
+import { plannedFor } from '../../domain/schedule'
 import { Sheet, NumInput } from '../components/Sheet'
 import { lockScreenActive, notifyRestEnd, setRestConfig, startRestAudio, stopRestAudio } from '../../app/restAlert'
 
@@ -52,6 +54,8 @@ function PickWorkout() {
     if (!ready || mesoIdx !== null) return
     if (pick) { setMesoIdx(pick.mesoIdx); setWeekIdx(pick.weekIdx); setDayIdx(pick.dayIdx); setPick(null); return }
     const m = settings.currentMeso ?? 0
+    const today = plannedFor(new Date(), profile.startDate)
+    if (today && today.mesoIndex === m) { setMesoIdx(m); setWeekIdx(today.weekIndex); setDayIdx(today.dayIndex); return }
     const { w, d } = defaultsFor(m)
     setMesoIdx(m); setWeekIdx(w); setDayIdx(d)
   }, [ready])
@@ -229,6 +233,8 @@ function ActiveWorkout({ initial }: { initial: WorkoutSession }) {
       {s.deload && <div className="note warn">Semana de descarga: menos series, pesos algo más bajos y lejos del fallo.</div>}
       {week.note && !s.deload && <div className="note">{week.note}</div>}
 
+      <WarmupCard dayName={day.name} />
+
       {week.test && day.tests?.length ? (
         <section className="card">
           <h2>🎯 Test de RM</h2>
@@ -271,6 +277,37 @@ function ActiveWorkout({ initial }: { initial: WorkoutSession }) {
 }
 
 // ---------------------------------------------------------------------
+
+function WarmupCard({ dayName }: { dayName: string }) {
+  const w = warmupFor(dayName)
+  const [done, setDone] = useState<number[]>([])
+  const [open, setOpen] = useState(true)
+  const all = done.length === w.steps.length
+  return (
+    <section className="card" style={all ? { borderColor: 'var(--ok)' } : undefined}>
+      <button className="pick" style={{ border: 0, padding: 0, margin: 0, background: 'none' }} onClick={() => setOpen(o => !o)} aria-expanded={open}>
+        <div className="row"><b className="grow">🔥 Calentamiento · 5 min</b><span className={`chip${all ? ' ok' : ''}`}>{done.length}/{w.steps.length}</span></div>
+        <div className="tiny muted">{w.title} · con goma elástica y movilidad. Después, las series de aproximación del primer ejercicio.</div>
+      </button>
+      {open && (
+        <ul className="list mt">
+          {w.steps.map((st, i) => (
+            <li key={i}>
+              <label className="row" style={{ fontWeight: 500, margin: 0, alignItems: 'flex-start' }}>
+                <input type="checkbox" checked={done.includes(i)} style={{ width: 22, height: 22, flex: 'none', marginTop: 2 }}
+                  onChange={() => { const n = done.includes(i) ? done.filter(x => x !== i) : [...done, i]; setDone(n); if (n.length === w.steps.length) setOpen(false) }} />
+                <span className="grow" style={{ opacity: done.includes(i) ? .5 : 1 }}>
+                  <span className="small"><b>{st.name}</b> · {st.dose}</span>
+                  {st.tip && <div className="tiny muted">{st.tip}</div>}
+                </span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
 
 function ExerciseCard({ ex, index, session, history, rms, baseId, onChange, onRemove }: {
   ex: SessionExercise; index: number; session: WorkoutSession; history: WorkoutSession[]; rms: Record<string, RmTest>

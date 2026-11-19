@@ -4,6 +4,7 @@ import { db } from '../../persistence/db'
 import { saveProfile, updateSettings } from '../../persistence/bootstrap'
 import { MACROCYCLE, TOTAL_WEEKS, calendarPosition, formatDate, mesoSchedule, parseISODate, toISODate } from '../../domain/program'
 import { dayPlan } from '../../domain/nutritionPlan'
+import { dayTimes, plannedFor, toHHMM } from '../../domain/schedule'
 import { formatClock, nextDayIndex, sessionSeconds, sessionVolume } from '../../app/training'
 import { useActiveSession, useFinishedSessions, useProfile, useSettings } from '../hooks'
 import { Icon } from '../Icons'
@@ -20,7 +21,10 @@ export default function Home() {
   const sched = mesoSchedule(profile.startDate)
   const cur = settings.currentMeso ?? 0
   const meso = MACROCYCLE[cur]
-  const { dayIdx, doneInMeso } = nextDayIndex(sessions, cur)
+  const todayPlan = plannedFor(new Date(), profile.startDate)
+  const fromCal = todayPlan && todayPlan.mesoIndex === cur ? todayPlan : null
+  const { dayIdx: nextIdx, doneInMeso } = nextDayIndex(sessions, cur)
+  const dayIdx = fromCal ? fromCal.dayIndex : nextIdx
   const weekIdx = cal.status === 'during' && cal.mesoIndex === cur
     ? cal.weekIndex
     : Math.min(meso.weeks.length - 1, Math.floor(doneInMeso / meso.days.length))
@@ -82,9 +86,11 @@ export default function Home() {
 
       {!active && (
         <section className="card">
-          <div className="tiny muted">TE TOCA</div>
+          <div className="tiny muted">{fromCal ? `HOY TE TOCA${fromCal.afternoon ? ' (POR LA TARDE)' : ''}` : 'PRÓXIMO ENTRENAMIENTO'}</div>
           <h2 className="mb0">{meso.days[dayIdx].name}</h2>
           <p className="small muted">{meso.days[dayIdx].focus} · {meso.weeks[weekIdx].label}</p>
+          {(() => { const t = dayTimes(new Date(), profile.startDate); return (
+            <p className="small mb0" style={{ marginBottom: '.6rem' }}>⏰ {toHHMM(t.wake)}{t.gym ? ` · 🏋️ ${toHHMM(t.gym.start)}–${toHHMM(t.gym.end)}` : ''}{t.leave != null ? ` · 🚪 ${toHHMM(t.leave)}` : ''} · 🛏 {toHHMM(t.bed)}</p>) })()}
           <button className="btn primary" onClick={startSuggested}>Preparar este entrenamiento</button>
           <button className="btn" onClick={() => setTab('entrenar')}>Elegir otro</button>
         </section>

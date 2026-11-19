@@ -10,8 +10,8 @@ p { margin: 0 0 .75rem; max-width: 62ch; }
 .main { flex: 1; overflow-y: auto; padding: 1rem max(1rem, env(safe-area-inset-left)) 1.5rem max(1rem, env(safe-area-inset-right)); -webkit-overflow-scrolling: touch; }
 .page { max-width: 720px; margin: 0 auto; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem; margin-bottom: .875rem; }
-.nav { display: grid; grid-template-columns: repeat(5, 1fr); position: relative; z-index: 10; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
-.nav button { min-height: 58px; background: none; border: 0; color: var(--muted); font: inherit; font-size: .8rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.nav { display: grid; grid-template-columns: repeat(6, 1fr); position: relative; z-index: 10; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+.nav button { min-height: 58px; background: none; border: 0; color: var(--muted); font: inherit; font-size: .7rem; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
 .nav button[aria-current="page"] { color: var(--accent); font-weight: 700; box-shadow: inset 0 3px 0 var(--accent); }
 .nav svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .btn { min-height: var(--tap); padding: 0 1.25rem; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: inherit; font-weight: 600; width: 100%; }
